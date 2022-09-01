@@ -1,0 +1,29 @@
+version: '3.8'
+services:
+  nginx:
+    container_name: nginx
+    build:
+      context: .
+      dockerfile: Dockerfile-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - {PWD}/etc/nginx:/etc/nginx
+      - {PWD}/app:/var/www/html
+      - {PWD}/log/nginx:/var/log/nginx
+  db:
+    image: mariadb:10.5.10
+    container_name: db
+    env_file:
+      .env
+    volumes:
+      - {PWD}/db/data:/var/lib/mysql
+      - {PWD}/etc/db/my.cnf:/etc/mysql/conf.d/my.cnf
+  app:
+    build: .
+    container_name: app
+    working_dir: /var/www/html
+    volumes:
+      - {PWD}/app:/var/www/html
+      - {PWD}/etc/php/php.ini:${PHP_INI_DIR}/conf.d/php.ini

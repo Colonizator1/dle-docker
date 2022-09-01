@@ -1,0 +1,23 @@
+FROM nginx:1.21.5
+
+# Remove sym links from nginx image
+RUN rm /var/log/nginx/access.log
+RUN rm /var/log/nginx/error.log
+
+# Install logrotate
+RUN apt-get update && apt-get -y install logrotate
+
+# Install adiitional useful packeges
+RUN apt-get install -y nano wget curl htop mc ncdu nmap rsync
+
+#Change NGNIX guid/uid#
+ARG nginx_guid=1000
+ARG nginx_uid=1000
+
+RUN set -x \
+# create nginx user/group first, to be consistent throughout docker variants
+    && addgroup --system --gid $nginx_guid developer \
+    && adduser --system --disabled-login --ingroup developer --no-create-home --home /nonexistent --gecos "nginx user" --shell /bin/false --uid $nginx_uid developer
+
+# Start nginx and cron as a service
+CMD service cron start && nginx -g 'daemon off;'
