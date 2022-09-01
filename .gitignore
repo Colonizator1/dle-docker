@@ -1,7 +1,7 @@
 .idea
 .DS_Store
 .env
-app
+app/
 !app/info.php
 backup
 db/data
