@@ -21,3 +21,4 @@ For restoring db:
 
 ### Install DLE
 1) Copy paste dle files into app folder
+2) Rename db connection localhost to "db" (name of your docker service) in the app/engine/data/dbconfig.php

@@ -16,7 +16,8 @@ ARG USER_ID=1000
 ARG GROUP_ID=1000
 
 RUN usermod -u ${USER_ID} www-data && groupmod -g ${GROUP_ID} www-data
-
+RUN chown -R www-data:www-data /var/www
+RUN rm /usr/local/etc/php-fpm.d/zz-docker.conf
 WORKDIR /var/www/html
 USER "${USER_ID}:${GROUP_ID}"
 
