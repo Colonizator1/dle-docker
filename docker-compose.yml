@@ -12,6 +12,9 @@ services:
       - ${PWD}/etc/nginx:/etc/nginx
       - ${PWD}/app:/var/www/html
       - ${PWD}/log/nginx:/var/log/nginx
+      - ${PWD}/etc/php/phpsock:/tmp/php
+    links:
+      - "app"
   db:
     image: mariadb:10.5.10
     container_name: db
@@ -26,5 +29,7 @@ services:
     working_dir: /var/www/html
     volumes:
       - ${PWD}/app:/var/www/html
-      - ${PWD}/etc/php/php.ini:${PHP_INI_DIR}/conf.d/php.ini
+      - ${PWD}/etc/php/php.ini:/usr/local/etc/php/php.ini
       - ${PWD}/etc/php/www.conf:/usr/local/etc/php-fpm.d/www.conf
+      - ${PWD}/log/phpslow.log:/var/log/phpslow.log
+      - ${PWD}/etc/php/phpsock:/tmp/php
