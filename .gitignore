@@ -6,6 +6,8 @@ app/
 backup
 db/data
 db/.DS_Store
+etc/nginx/cert.pem
+etc/nginx/key.pem
 etc/nginx/conf.d/
 !etc/nginx/conf.d/example.conf
 log

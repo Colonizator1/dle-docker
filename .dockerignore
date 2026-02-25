@@ -1,3 +1,7 @@
 log
 app
 db/data
+.idea
+.vscode
+etc/nginx/cert.pem
+etc/nginx/key.pem
