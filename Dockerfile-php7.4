@@ -1,0 +1,38 @@
+FROM php:7.4-fpm
+
+#RUN sed -i s/deb.debian.org/archive.debian.org/g /etc/apt/sources.list
+#RUN sed -i 's|security.debian.org|archive.debian.org/debian-security/|g' /etc/apt/sources.list 
+#RUN sed -i '/stretch-updates/d' /etc/apt/sources.list
+
+RUN apt-get update && apt-get install -y libfreetype6-dev libjpeg62-turbo-dev libgeoip-dev libgd-dev libzip-dev libpng-dev unzip zlib1g-dev nano wget curl htop nmap rsync ssmtp;
+RUN docker-php-ext-install mysqli pdo pdo_mysql zip \
+    && docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/ \
+    && docker-php-ext-install gd \
+    && pecl install geoip-1.1.1 \
+    && docker-php-ext-enable geoip \
+    && docker-php-ext-enable mysqli \
+    && docker-php-ext-configure opcache --enable-opcache \
+    && docker-php-ext-install opcache
+
+#RUN sed -i '/#!\/bin\/sh/aservice sendmail restart' /usr/local/bin/docker-php-entrypoint
+#RUN sed -i '/#!\/bin\/sh/aecho "$(hostname -i)\t$(hostname) $(hostname).localhost" >> /etc/hosts' /usr/local/bin/docker-php-entrypoint
+
+RUN curl -o ioncube.tar.gz https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz \
+    && tar -xvvzf ioncube.tar.gz \
+    && mv ioncube/ioncube_loader_lin_7.4.so `php-config --extension-dir` \
+    && rm -Rf ioncube.tar.gz ioncube \
+    && docker-php-ext-enable ioncube_loader_lin_7.4
+
+COPY etc/php/ssmtp.conf /etc/ssmtp/ssmtp.conf
+
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+
+RUN usermod -u ${USER_ID} www-data && groupmod -g ${GROUP_ID} www-data
+RUN chown -R www-data:www-data /var/www
+RUN rm /usr/local/etc/php-fpm.d/zz-docker.conf
+
+WORKDIR /var/www/html
+USER "${USER_ID}:${GROUP_ID}"
+
+CMD ["php-fpm"]

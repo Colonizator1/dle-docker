@@ -1,0 +1,7 @@
+mailhub=smtp-relay.gmail.com
+#AuthUser=info@example.com
+#AuthPass=12345678
+UseSTARTTLS=YES
+# Allow the "From" email header.
+FromLineOverride=YES
+Hostname=example.com

@@ -24,7 +24,9 @@ services:
       - ${PWD}/db/data:/var/lib/mysql
       - ${PWD}/etc/db/my.cnf:/etc/mysql/conf.d/my.cnf
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile-php${PHP_VERSION}
     container_name: app
     working_dir: /var/www/html
     volumes:
