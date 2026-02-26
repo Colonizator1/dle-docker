@@ -34,6 +34,7 @@ services:
       - ${PWD}/etc/php/php.ini:/usr/local/etc/php/php.ini
       - ${PWD}/etc/php/www.conf:/usr/local/etc/php-fpm.d/www.conf
       - ${PWD}/log/phpslow.log:/var/log/phpslow.log
+      - ${PWD}/log/phpmail.log:/var/log/phpmail.log
       - phpsock:/tmp/php
 
 volumes:

@@ -17,7 +17,7 @@ It's docker for old legacy project with CMS DataLife Engine v.13.2 with php 5.6,
 
 For restoring db:
 
-1) paste your dump.sql into db/data/backup folder 
+1) paste your dump.sql into db/data/backup folder: ```mkdir db/data/backup && cp dump.sql db/data/backup/```
 2) Enter db container ```docker exec -it db bash```
 3) ```mysql -u exampleuser -p"exampleuser_password"```
 4) ```use exampledb```
