@@ -1,5 +1,5 @@
 # DataLife Engine Nginx+PHP-fpm + Docker
-It's docker for old legacy project with CMS DataLife Engine v.13.2 with php 5.6
+It's docker for old legacy project with CMS DataLife Engine v.13.2 with php 7.2
 Create 
 ### Installing DB
 
