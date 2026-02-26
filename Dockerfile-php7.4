@@ -31,6 +31,9 @@ ARG GROUP_ID=1000
 RUN usermod -u ${USER_ID} www-data && groupmod -g ${GROUP_ID} www-data
 RUN chown -R www-data:www-data /var/www
 RUN rm /usr/local/etc/php-fpm.d/zz-docker.conf
+RUN touch /var/log/phpslow.log
+RUN mkdir -p /tmp/php
+RUN chown -R www-data:www-data /tmp/php
 
 WORKDIR /var/www/html
 USER "${USER_ID}:${GROUP_ID}"
