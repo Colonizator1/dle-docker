@@ -1,35 +1,57 @@
 FROM php:8.5.12-fpm
 
-RUN apt-get update && apt-get install -y libfreetype6-dev libjpeg62-turbo-dev libgeoip-dev libgd-dev libzip-dev libpng-dev libicu-dev unzip zlib1g-dev nano wget curl htop nmap rsync ssmtp;
-RUN docker-php-ext-install mysqli pdo pdo_mysql zip exif intl \
-    && docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/ \
-    && docker-php-ext-install gd \
-    && cd /tmp && pecl download geoip-1.1.1 && tar xzf geoip-1.1.1.tgz && cd geoip-1.1.1 \
-    && sed -i -E 's/ ?TSRMLS_(CC|DC|FETCH\(\);?)//g' geoip.c php_geoip.h \
-    && sed -i -E '/^zend_function_entry geoip_functions/i ZEND_BEGIN_ARG_INFO_EX(arginfo_geoip_any, 0, 0, 0) ZEND_ARG_VARIADIC_INFO(0, args) ZEND_END_ARG_INFO()' geoip.c \
-    && sed -i -E 's/PHP_FE\((\w+),\s*NULL\)/PHP_FE(\1, arginfo_geoip_any)/' geoip.c \
-    && phpize && ./configure && make -j"$(nproc)" && make install \
-    && cd / && rm -rf /tmp/geoip-1.1.1 /tmp/geoip-1.1.1.tgz \
-    && docker-php-ext-enable geoip \
-    && docker-php-ext-enable mysqli
+# Mail: DLE sends with PHP mail() (mail_metod = php) -> sendmail_path -> ssmtp.
+# The relay config (etc/php/ssmtp.conf) is mounted by docker-compose, it is not baked into the image.
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends ssmtp; \
+    rm -rf /var/lib/apt/lists/*
 
-RUN curl -o ioncube.tar.gz https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz \
-    && tar -xvvzf ioncube.tar.gz \
-    && mv ioncube/ioncube_loader_lin_8.5.so `php-config --extension-dir` \
-    && rm -Rf ioncube.tar.gz ioncube \
-    && docker-php-ext-enable ioncube_loader_lin_8.5
+# PHP extensions DLE 21 needs that are not compiled into the official image:
+#   gd (JPEG, PNG, WebP, FreeType), exif, intl, mysqli, zip (plugin and upgrade archives).
+# Already built in: zlib, xml, curl, mbstring, fileinfo, opcache.
+# The -dev packages are only needed to compile: they are purged afterwards and only the
+# runtime libraries the extensions link against are kept.
+RUN set -eux; \
+    savedAptMark="$(apt-mark showmanual)"; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        libfreetype-dev libjpeg62-turbo-dev libpng-dev libwebp-dev libicu-dev libzip-dev; \
+    docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; \
+    docker-php-ext-install -j"$(nproc)" gd exif intl mysqli zip; \
+    apt-mark auto '.*' > /dev/null; \
+    apt-mark manual $savedAptMark > /dev/null; \
+    find /usr/local -type f -executable -exec ldd '{}' ';' \
+        | awk '/=>/ { so = $(NF-1); if (index(so, "/usr/local/") == 1) { next }; gsub("^/(usr/)?", "", so); printf "*%s\n", so }' \
+        | sort -u | xargs -r dpkg-query --search \
+        | awk -F': ' '!/^diversion / { print $1 }' | tr ',' '\n' | sed 's/:.*//; s/ //g' \
+        | sort -u | xargs -r apt-mark manual; \
+    apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
+    rm -rf /var/lib/apt/lists/*; \
+    if php -m 2>&1 | grep -qi 'warning'; then php -m; exit 1; fi; \
+    for e in gd exif intl mysqli zip; do php -m | grep -qix "$e"; done; \
+    php -r 'exit(function_exists("imagewebp") && function_exists("imagettftext") ? 0 : 1);'
 
-COPY etc/php/ssmtp.conf /etc/ssmtp/ssmtp.conf
+# ionCube Loader: DLE Seo and DLE Filter (LazyDev) are ionCube-encoded.
+RUN set -eux; \
+    curl -fsSL -o /tmp/ioncube.tar.gz https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz; \
+    tar -xzf /tmp/ioncube.tar.gz -C /tmp; \
+    mv /tmp/ioncube/ioncube_loader_lin_8.5.so "$(php-config --extension-dir)/"; \
+    rm -rf /tmp/ioncube /tmp/ioncube.tar.gz; \
+    docker-php-ext-enable ioncube_loader_lin_8.5; \
+    php -v | grep -qi ioncube
 
 ARG USER_ID=1000
 ARG GROUP_ID=1000
 
-RUN usermod -u ${USER_ID} www-data && groupmod -g ${GROUP_ID} www-data
-RUN chown -R www-data:www-data /var/www
-RUN rm /usr/local/etc/php-fpm.d/zz-docker.conf
-RUN touch /var/log/phpslow.log
-RUN mkdir -p /tmp/php
-RUN chown -R www-data:www-data /tmp/php
+RUN set -eux; \
+    usermod -u ${USER_ID} www-data; \
+    groupmod -g ${GROUP_ID} www-data; \
+    chown -R www-data:www-data /var/www; \
+    rm /usr/local/etc/php-fpm.d/zz-docker.conf; \
+    touch /var/log/phpslow.log; \
+    mkdir -p /tmp/php; \
+    chown -R www-data:www-data /tmp/php
 
 WORKDIR /var/www/html
 USER "${USER_ID}:${GROUP_ID}"
