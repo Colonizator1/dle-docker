@@ -1,0 +1,37 @@
+FROM php:8.5.12-fpm
+
+RUN apt-get update && apt-get install -y libfreetype6-dev libjpeg62-turbo-dev libgeoip-dev libgd-dev libzip-dev libpng-dev libicu-dev unzip zlib1g-dev nano wget curl htop nmap rsync ssmtp;
+RUN docker-php-ext-install mysqli pdo pdo_mysql zip exif intl \
+    && docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/ \
+    && docker-php-ext-install gd \
+    && cd /tmp && pecl download geoip-1.1.1 && tar xzf geoip-1.1.1.tgz && cd geoip-1.1.1 \
+    && sed -i -E 's/ ?TSRMLS_(CC|DC|FETCH\(\);?)//g' geoip.c php_geoip.h \
+    && sed -i -E '/^zend_function_entry geoip_functions/i ZEND_BEGIN_ARG_INFO_EX(arginfo_geoip_any, 0, 0, 0) ZEND_ARG_VARIADIC_INFO(0, args) ZEND_END_ARG_INFO()' geoip.c \
+    && sed -i -E 's/PHP_FE\((\w+),\s*NULL\)/PHP_FE(\1, arginfo_geoip_any)/' geoip.c \
+    && phpize && ./configure && make -j"$(nproc)" && make install \
+    && cd / && rm -rf /tmp/geoip-1.1.1 /tmp/geoip-1.1.1.tgz \
+    && docker-php-ext-enable geoip \
+    && docker-php-ext-enable mysqli
+
+RUN curl -o ioncube.tar.gz https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz \
+    && tar -xvvzf ioncube.tar.gz \
+    && mv ioncube/ioncube_loader_lin_8.5.so `php-config --extension-dir` \
+    && rm -Rf ioncube.tar.gz ioncube \
+    && docker-php-ext-enable ioncube_loader_lin_8.5
+
+COPY etc/php/ssmtp.conf /etc/ssmtp/ssmtp.conf
+
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+
+RUN usermod -u ${USER_ID} www-data && groupmod -g ${GROUP_ID} www-data
+RUN chown -R www-data:www-data /var/www
+RUN rm /usr/local/etc/php-fpm.d/zz-docker.conf
+RUN touch /var/log/phpslow.log
+RUN mkdir -p /tmp/php
+RUN chown -R www-data:www-data /tmp/php
+
+WORKDIR /var/www/html
+USER "${USER_ID}:${GROUP_ID}"
+
+CMD ["php-fpm"]

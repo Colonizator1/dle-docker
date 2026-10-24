@@ -5,7 +5,7 @@ It's docker for old legacy project with CMS DataLife Engine v.13.2 with php 5.6,
 ## Step by step after git clone
 
 1) cp .env.example .env and fill your envs
-2) touch log/phpslow.log
+2) mkdir log && touch log/phpslow.log
 3) cp etc/php/ssmtp.conf.example etc/php/ssmtp.conf and setup your credentials
 
 ## Installing DB
