@@ -25,7 +25,8 @@ For restoring db:
 
 ## Nginx
 
-1) Make copy from etc/nginx/conf.d/example.conf (name should be like *.conf) and change server_name for your domain name.
+1) Make copy from etc/nginx/conf.d/example_dle21.conf (name should be like *.conf) and change server_name for your domain name.
+   It is a complete DLE 21 config: security rules come from etc/nginx/dle-security.conf, requests by IP / unknown hosts are dropped by the default server in etc/nginx/nginx.conf.
 2) restart nginx: ```docker exec -it nginx nginx -s reload```
 
 ## Install DLE
